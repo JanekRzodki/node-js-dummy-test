@@ -1,0 +1,46 @@
+name: Build and Test Node App
+
+on:
+  push:
+    branches:
+      - ino_dev
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repo (not strictly needed)
+        uses: actions/checkout@v3
+
+      - name: 🧹 Czyszczenie workspace
+        run: |
+          rm -rf app LAB_5 temp
+
+      - name: 📥 Klonowanie aplikacji
+        run: |
+          git clone https://github.com/devenes/node-js-dummy-test app
+
+      - name: 📥 Klonowanie LAB_5 (dockerfiles)
+        run: |
+          git clone --depth 1 --branch JR414945 https://github.com/InzynieriaOprogramowaniaAGH/MDO2025_INO.git temp
+          cp -r temp/JR414945/LAB_5 ./LAB_5
+          rm -rf temp
+
+      - name: 🔨 Budowanie obrazu aplikacji
+        run: |
+          docker build -t nodeapp_builder -f LAB_5/Dockerfile.build ./app
+
+      - name: 🧪 Budowanie i uruchamianie testów
+        run: |
+          docker build -t nodeapp_tester -f LAB_5/Dockerfile.test ./app
+          docker run --rm nodeapp_tester
+
+      - name: 🧹 Sprzątanie kontenerów i obrazów
+        if: always()
+        run: |
+          docker rm -f nodeapp_test_helper || true
+          docker rm -f nodeapp || true
+          docker rmi -f nodeapp_builder || true
+          docker rmi -f nodeapp_tester || true
+          docker network rm pipeline_network || true
