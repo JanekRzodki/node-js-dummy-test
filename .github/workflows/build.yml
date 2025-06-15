@@ -35,6 +35,17 @@ jobs:
         run: |
           docker build -t nodeapp_tester -f LAB_5/Dockerfile.test ./app
           docker run --rm nodeapp_tester
+  
+      - name: Save logs from docker container
+        run: |
+          mkdir -p logs
+          docker logs $(docker ps -a -q --filter ancestor=nodeapp_tester --format="{{.ID}}") > logs/test.log || true
+
+      - name: Upload test log as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: logs/test.log
 
       - name: 🧹 Sprzątanie kontenerów i obrazów
         if: always()
